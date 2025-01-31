@@ -1,6 +1,6 @@
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import { CfnOutput, Duration, RemovalPolicy } from 'aws-cdk-lib';
-import { InstanceType, Vpc } from 'aws-cdk-lib/aws-ec2';
+import { InstanceType, IVpc, Vpc } from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
 import {
   ApplicationListener,
@@ -10,15 +10,9 @@ import {
 } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import { resolve } from 'path';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
-import { ARecord, RecordTarget } from 'aws-cdk-lib/aws-route53';
-import { LoadBalancerTarget } from 'aws-cdk-lib/aws-route53-targets';
-import * as acm from 'aws-cdk-lib/aws-certificatemanager';
-
 
 interface Props {
-  vpc: Vpc;
-  serviceName: string;
-  region: string;
+  vpcId: string;
 }
 
 export class ECS extends Construct {
@@ -36,8 +30,15 @@ export class ECS extends Construct {
 
   public readonly log_group: LogGroup;
 
+  public readonly vpc: IVpc;
+
   constructor(scope: Construct, id: string, props: Props) {
     super(scope, id);
+
+    // Use an existing VPC
+    this.vpc = Vpc.fromLookup(scope, `Resilience-ExistingVPC`, {
+      vpcId: props.vpcId,
+    });
 
     this.log_group = new LogGroup(
       scope,
@@ -52,15 +53,20 @@ export class ECS extends Construct {
     this.cluster = new ecs.Cluster(
       scope,
       `resilience-EcsCluster`,
-      { vpc: props.vpc },
+      { vpc: this.vpc },
     );
 
-    this.cluster.addCapacity(
-      `Resilience-DefaultAutoScalingGroup`,
-      {
-        instanceType: new InstanceType('t2.micro'),
+    this.cluster.addCapacity('Resilience-DefaultAutoScalingGroup', {
+      instanceType: new InstanceType('t2.micro'),
+      desiredCapacity: 2,  // Number of instances
+      minCapacity: 1,
+      maxCapacity: 5,
+      vpcSubnets: {
+        subnets: this.vpc.selectSubnets({
+          availabilityZones: ['us-east-1a'], // Replace with your preferred AZ
+        }).subnets,
       },
-    );
+    });
 
     this.task_definition = new ecs.Ec2TaskDefinition(
       scope,
@@ -96,7 +102,7 @@ export class ECS extends Construct {
     );
 
     this.load_balancer = new ApplicationLoadBalancer(scope, `Resilience-LB`, {
-      vpc: props.vpc,
+      vpc: this.vpc,
       internetFacing: true,
       loadBalancerName: `resilience-lb`,
     });
@@ -106,7 +112,6 @@ export class ECS extends Construct {
       open: true, // Allow incoming traffic
     });
     
-
     this.listener.addTargets(`Resilience-ECS`, {
       protocol: ApplicationProtocol.HTTP,
       targets: [

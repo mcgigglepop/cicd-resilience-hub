@@ -1,0 +1,13 @@
+server/fullstacktemplates-build
+
+infrastructure/*.js
+!infrastructure/lib/constructs/RDS/init/index.js
+!infrastructure/lib/constructs/RDS/init-write/index.js
+!infrastructure/lib/constructs/CDN/generate-presign/index.js
+!infrastructure/lib/constructs/CDN/validate-presign/index.js
+!infrastructure/jest.config.js
+infrastructure/*.d.ts
+infrastructure/node_modules
+infrastructure/.cdk.staging
+infrastructure/cdk.out
+infrastructure/.env*

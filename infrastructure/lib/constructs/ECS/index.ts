@@ -119,10 +119,6 @@ export class ECS extends Construct {
           containerName: `Resilience-Express`,
           containerPort: 80,
         }),
-        this.service.loadBalancerTarget({
-          containerName: `Resilience-Express`,
-          containerPort: 80,
-        }),
       ],
       healthCheck: {
         protocol: Protocol.HTTP,

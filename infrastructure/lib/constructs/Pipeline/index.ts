@@ -167,10 +167,10 @@ export class PipelineStack extends Construct {
           stateMachine: resilienceAssessmentStateMachine,
           executionNamePrefix: 'codepipeline',
           stateMachineInput: {
-            input: TaskInput.fromObject({
+            input: JSON.stringify({
               "StackArn": "arn:aws:cloudformation:us-east-1:412791426734:stack/ResilienceInfrastructureStack/e7dd7160-dfec-11ef-bd71-1274fecdafe9",
               "AppArn": "arn:aws:resiliencehub:us-east-1:412791426734:app/e0297334-f5c0-474b-a227-89f8f78230a0"
-            }).value,
+            }),
           },
         }),
       ],

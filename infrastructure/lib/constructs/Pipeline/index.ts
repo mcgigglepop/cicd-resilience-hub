@@ -86,7 +86,7 @@ export class PipelineStack extends Construct {
               'on-failure': 'ABORT',
               commands: [
                 'cd ../infrastructure',
-                `echo "${dockerhubPassword}" | docker login --username "${dockerhubUsername}" --password-stdin`,
+                // `echo "${dockerhubPassword}" | docker login --username "${dockerhubUsername}" --password-stdin`,
                 `${deployCommand}`,
               ],
             },

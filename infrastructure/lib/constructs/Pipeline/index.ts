@@ -96,10 +96,7 @@ export class PipelineStack extends Construct {
                 'export STACK_ARN=$(aws cloudformation describe-stacks --stack-name InfrastructureStack --query "Stacks[0].StackId" --output text)',
                 'echo "Exporting Stack ARN: $STACK_ARN"',
               ],
-            },
-            env: {
-              'exported-variables': ['STACK_ARN'],
-            },
+            }
           },
         }),
       },

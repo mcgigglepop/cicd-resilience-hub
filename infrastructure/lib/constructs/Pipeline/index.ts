@@ -16,6 +16,8 @@ import {
 import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { StateMachine, TaskInput } from 'aws-cdk-lib/aws-stepfunctions';
 import { pipelineConfig } from '../../../utils/pipelineConfig';
+import * as stepfunctions from 'aws-cdk-lib/aws-stepfunctions';
+
 
 interface Props {
   environment: string;
@@ -168,7 +170,7 @@ export class PipelineStack extends Construct {
             input: TaskInput.fromObject({
               StackArn: "arn:aws:cloudformation:us-east-1:412791426734:stack/ResilienceInfrastructureStack/e7dd7160-dfec-11ef-bd71-1274fecdafe9",
               AppArn: "arn:aws:resiliencehub:us-east-1:412791426734:app/e0297334-f5c0-474b-a227-89f8f78230a0"
-            }),
+            }).value,
           },
         }),
       ],

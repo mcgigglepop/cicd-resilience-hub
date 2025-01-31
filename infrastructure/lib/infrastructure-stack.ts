@@ -9,7 +9,7 @@ export class InfrastructureStack extends Stack {
     super(scope, id, props);
 
     this.ecs = new ECS(this, `ECS`, {
-      vpcId: 'vpc-xxxxxxxx',
+      vpcId: 'vpc-03fc766798ef404e1',
     });
   }
 }

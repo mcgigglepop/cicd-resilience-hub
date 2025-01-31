@@ -5,6 +5,7 @@ import {
   CodeBuildAction,
   GitHubSourceAction,
   GitHubTrigger,
+  StepFunctionInvokeAction,
 } from 'aws-cdk-lib/aws-codepipeline-actions';
 import {
   BuildSpec,
@@ -12,8 +13,8 @@ import {
   LinuxBuildImage,
   PipelineProject,
 } from 'aws-cdk-lib/aws-codebuild';
-
 import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam';
+import { StateMachine, TaskInput } from 'aws-cdk-lib/aws-stepfunctions';
 import { pipelineConfig } from '../../../utils/pipelineConfig';
 
 interface Props {
@@ -21,7 +22,6 @@ interface Props {
 }
 
 export class PipelineStack extends Construct {
-  readonly backEndTestProject: PipelineProject;
   readonly deployProject: PipelineProject;
   readonly pipeline: Pipeline;
   
@@ -54,7 +54,7 @@ export class PipelineStack extends Construct {
       ],
     });
 
-    // build and deploy backend
+    // Define the deploy project
     this.deployProject = new PipelineProject(
       this,
       `Resilience-PipelineProject-BuildAndDeploy`,
@@ -92,21 +92,28 @@ export class PipelineStack extends Construct {
             },
             post_build: {
               'on-failure': 'ABORT',
-              commands: [''],
+              commands: [
+                'export STACK_ARN=$(aws cloudformation describe-stacks --stack-name InfrastructureStack --query "Stacks[0].StackId" --output text)',
+                'echo "Exporting Stack ARN: $STACK_ARN"',
+              ],
+            },
+            env: {
+              'exported-variables': ['STACK_ARN'],
             },
           },
         }),
       },
     );
 
-    // adding permissions to the codebuild deploy project
+    // Grant permissions to deploy project
     this.deployProject.addToRolePolicy(codeBuildPolicy);
 
-    // new pipeline 
+    // Create pipeline
     this.pipeline = new Pipeline(scope, `Resilience-Pipeline`, {
       pipelineName: `Resilience-Pipeline`,
     });
 
+    // Add source stage
     this.pipeline.addStage({
       stageName: 'Source',
       actions: [
@@ -122,6 +129,7 @@ export class PipelineStack extends Construct {
       ],
     });
 
+    // Add build and deploy stage
     this.pipeline.addStage({
       stageName: 'Build-and-Deploy',
       actions: [
@@ -129,10 +137,46 @@ export class PipelineStack extends Construct {
           actionName: 'Build-and-Deploy',
           project: this.deployProject,
           input: outputSource,
-          outputs: undefined,
         }),
       ],
     });
+
+    // IAM policy for Step Functions execution
+    const stepFunctionsPolicy = new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: ['states:StartExecution'],
+      resources: [
+        'arn:aws:states:us-east-1:412791426734:stateMachine:AppAssessement',
+      ],
+    });
+
+    this.deployProject.addToRolePolicy(stepFunctionsPolicy);
+
+    // Reference the Step Functions state machine
+    const resilienceAssessmentStateMachine = StateMachine.fromStateMachineArn(
+      this,
+      'ResilienceAssessmentStateMachine',
+      'arn:aws:states:us-east-1:412791426734:stateMachine:AppAssessement'
+    );
+
+    // Add resilience assessment stage
+    this.pipeline.addStage({
+      stageName: 'Run-Resilience-Assessment',
+      actions: [
+        new StepFunctionInvokeAction({
+          actionName: 'Run-Resilience-Assessment',
+          stateMachine: resilienceAssessmentStateMachine,
+          executionNamePrefix: 'codepipeline',
+          stateMachineInput: {
+            input: TaskInput.fromObject({
+              StackArn: "arn:aws:cloudformation:us-east-1:412791426734:stack/ResilienceInfrastructureStack/e7dd7160-dfec-11ef-bd71-1274fecdafe9",
+              AppArn: "arn:aws:resiliencehub:us-east-1:412791426734:app/e0297334-f5c0-474b-a227-89f8f78230a0"
+            }),
+          },
+        }),
+      ],
+    });
+    
 
     Tags.of(this).add('Context', `${tag}`);
   }

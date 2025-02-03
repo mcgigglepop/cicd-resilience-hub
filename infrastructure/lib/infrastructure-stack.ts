@@ -9,7 +9,7 @@ export class InfrastructureStack extends Stack {
     super(scope, id, props);
 
     this.ecs = new ECS(this, `ECS`, {
-      vpcId: 'vpc-03fc766798ef404e1',
+      vpcId: 'vpc-015932faad06cf85b',
     });
 
     // 🔹 Add CloudFormation Output for Stack ARN

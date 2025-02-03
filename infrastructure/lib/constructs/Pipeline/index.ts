@@ -140,41 +140,41 @@ export class PipelineStack extends Construct {
       ],
     });
 
-    // // IAM policy for Step Functions execution
-    // const stepFunctionsPolicy = new PolicyStatement({
-    //   effect: Effect.ALLOW,
-    //   actions: ['states:StartExecution'],
-    //   resources: [
-    //     'arn:aws:states:us-east-1:412791426734:stateMachine:AppAssessement',
-    //   ],
-    // });
+    // IAM policy for Step Functions execution
+    const stepFunctionsPolicy = new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: ['states:StartExecution'],
+      resources: [
+        'arn:aws:states:us-east-1:054917577753:stateMachine:AppAssessement',
+      ],
+    });
 
-    // this.deployProject.addToRolePolicy(stepFunctionsPolicy);
+    this.deployProject.addToRolePolicy(stepFunctionsPolicy);
 
-    // // Reference the Step Functions state machine
-    // const resilienceAssessmentStateMachine = StateMachine.fromStateMachineArn(
-    //   this,
-    //   'ResilienceAssessmentStateMachine',
-    //   'arn:aws:states:us-east-1:412791426734:stateMachine:AppAssessement'
-    // );
+    // Reference the Step Functions state machine
+    const resilienceAssessmentStateMachine = StateMachine.fromStateMachineArn(
+      this,
+      'ResilienceAssessmentStateMachine',
+      'arn:aws:states:us-east-1:054917577753:stateMachine:AppAssessement'
+    );
 
-    // // Add resilience assessment stage
-    // this.pipeline.addStage({
-    //   stageName: 'Run-Resilience-Assessment',
-    //   actions: [
-    //     new StepFunctionInvokeAction({
-    //       actionName: 'Run-Resilience-Assessment',
-    //       stateMachine: resilienceAssessmentStateMachine,
-    //       executionNamePrefix: 'codepipeline',
-    //       stateMachineInput: {
-    //         input: JSON.stringify({
-    //           "StackArn": "arn:aws:cloudformation:us-east-1:412791426734:stack/ResilienceInfrastructureStack/e7dd7160-dfec-11ef-bd71-1274fecdafe9",
-    //           "AppArn": "arn:aws:resiliencehub:us-east-1:412791426734:app/e0297334-f5c0-474b-a227-89f8f78230a0"
-    //         }),
-    //       },
-    //     }),
-    //   ],
-    // });
+    // Add resilience assessment stage
+    this.pipeline.addStage({
+      stageName: 'Run-Resilience-Assessment',
+      actions: [
+        new StepFunctionInvokeAction({
+          actionName: 'Run-Resilience-Assessment',
+          stateMachine: resilienceAssessmentStateMachine,
+          executionNamePrefix: 'codepipeline',
+          stateMachineInput: {
+            input: JSON.stringify({
+              "StackArn": "arn:aws:cloudformation:us-east-1:054917577753:stack/ResilienceInfrastructureStack/56f91010-e257-11ef-a1a7-0e12b1742aa3",
+              "AppArn": "arn:aws:resiliencehub:us-east-1:412791426734:app/e0297334-f5c0-474b-a227-89f8f78230a0"
+            }),
+          },
+        }),
+      ],
+    });
     
 
     Tags.of(this).add('Context', `${tag}`);

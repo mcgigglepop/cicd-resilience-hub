@@ -168,8 +168,8 @@ export class PipelineStack extends Construct {
           executionNamePrefix: 'codepipeline',
           stateMachineInput: {
             input: JSON.stringify({
-              "StackArn": "arn:aws:cloudformation:us-east-1:054917577753:stack/ResilienceInfrastructureStack/56f91010-e257-11ef-a1a7-0e12b1742aa3",
-              "AppArn": "arn:aws:resiliencehub:us-east-1:054917577753:app/2ededaa1-a896-401f-9cae-d48f3dd0eb26"
+              "StackArn": "arn:aws:cloudformation:us-east-1:054917577753:stack/ResilienceInfrastructureStack/78bccfc0-e30b-11ef-abc6-124d3fdcb0b3",
+              "AppArn": "arn:aws:resiliencehub:us-east-1:054917577753:app/09497f2e-e8c6-489c-9716-07110b5b7f6d"
             }),
           },
         }),

@@ -63,7 +63,7 @@ export class ECS extends Construct {
       maxCapacity: 5,
       vpcSubnets: {
         subnets: this.vpc.selectSubnets({
-          availabilityZones: ['us-east-1a'], // Replace with your preferred AZ
+          availabilityZones: ['us-east-1a', 'us-east-1b'], // Replace with your preferred AZ
         }).subnets,
       },
     });

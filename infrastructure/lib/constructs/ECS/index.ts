@@ -1,6 +1,6 @@
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import { CfnOutput, Duration, RemovalPolicy } from 'aws-cdk-lib';
-import { InstanceType, IVpc, Vpc } from 'aws-cdk-lib/aws-ec2';
+import { InstanceType, IVpc, Vpc, SubnetType } from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
 import {
   ApplicationListener,
@@ -10,6 +10,9 @@ import {
 } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import { resolve } from 'path';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
+
+import * as ec2 from 'aws-cdk-lib/aws-ec2';  // Add this import if missing
+
 
 interface Props {
   vpcId: string;
@@ -58,16 +61,14 @@ export class ECS extends Construct {
 
     this.cluster.addCapacity('Resilience-DefaultAutoScalingGroup', {
       instanceType: new InstanceType('t2.micro'),
-      desiredCapacity: 2,  // Number of instances
+      desiredCapacity: 2,  // Ensure at least 2 instances
       minCapacity: 1,
       maxCapacity: 5,
       vpcSubnets: {
-        subnets: this.vpc.selectSubnets({
-          availabilityZones: ['us-east-1a', 'us-east-1b'], // Replace with your preferred AZ
-        }).subnets,
+        subnetType: SubnetType.PUBLIC,  // Automatically select all public subnets across AZs
       },
     });
-
+    
     this.task_definition = new ecs.Ec2TaskDefinition(
       scope,
       `Resilience-TaskDefinition`,
@@ -92,14 +93,16 @@ export class ECS extends Construct {
       protocol: ecs.Protocol.TCP,
     });
 
-    this.service = new ecs.Ec2Service(
-      scope,
-      `Resilience-Service`,
-      {
-        cluster: this.cluster,
-        taskDefinition: this.task_definition,
-      },
-    );
+    this.service = new ecs.Ec2Service(this, `Resilience-Service`, {
+      cluster: this.cluster,
+      taskDefinition: this.task_definition,
+      desiredCount: 2,  // Ensure at least 2 running tasks across AZs
+      placementStrategies: [
+        ecs.PlacementStrategy.spreadAcrossInstances(),  // Spread tasks across instances in different AZs
+      ],
+    });
+    
+    
 
     this.load_balancer = new ApplicationLoadBalancer(scope, `Resilience-LB`, {
       vpc: this.vpc,
@@ -114,12 +117,7 @@ export class ECS extends Construct {
     
     this.listener.addTargets(`Resilience-ECS`, {
       protocol: ApplicationProtocol.HTTP,
-      targets: [
-        this.service.loadBalancerTarget({
-          containerName: `Resilience-Express`,
-          containerPort: 80,
-        }),
-      ],
+      targets: [this.service],
       healthCheck: {
         protocol: Protocol.HTTP,
         path: '/health',
